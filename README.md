@@ -4,4 +4,4 @@ multi-fit is a general tool that seeks to automatically detect peaks and fit to 
 <img src="media/mfit.png" width=100% height=100% alt = "mfit.png" title="mfit.png">
 
 
-** Planned Features **
+> ** Planned Features **
