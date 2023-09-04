@@ -7,16 +7,15 @@ multi-fit is a general tool that seeks to automatically detect peaks and fit to 
 ## Planned Features
 1. Ability to change the form of the fitting function. JP
 2. Compatibility with more types of input data (especially .csv). JP
-6. Default save names JS
-7. Dark/Light mode JS/JK
 8. Multithread buttons JK
 9. Quit button JK
-10. Make Amp guess more transparent (more info in README) JK
-11. Clear button for extra peaks JK
-12. Calibration input JK
-13. Dynamic plot text resize JS
-14. Functional Binning JP
-15. Exception handeling (JK/JS/JP)
+10. Reformat graphs before save JS
+11. Make Amp guess more transparent (more info in README) JK
+12. Clear button for extra peaks JK
+13. Calibration input JK
+14. Dynamic plot text resize JS
+15. Functional Binning JP
+16. Exception handeling (JK/JS/JP)
 
 > **Note**
 > Suggestions are highly encouraged!
