@@ -17,6 +17,7 @@ multi-fit is a general tool that seeks to automatically detect peaks and fit to 
 10. Make Amp guess more transparent (more info in README) JK
 11. Clear button for extra peaks JK
 12. Calibration input JK
+13. Dynamic plot text resize JS
 
 > **Note**
 > Suggestions are highly encouraged!
