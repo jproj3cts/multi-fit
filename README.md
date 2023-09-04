@@ -11,6 +11,7 @@ multi-fit is a general tool that seeks to automatically detect peaks and fit to 
 4. Label toggle JS
 5. Autolabel toggle JS
 6. Default save names JS
+7. Dark/Light mode JS/JK
 8. Multithread all buttons JK
 9. Quit button JK
 10. Make Amp guess more transparent (more info in README) JK
