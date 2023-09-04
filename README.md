@@ -18,6 +18,7 @@ multi-fit is a general tool that seeks to automatically detect peaks and fit to 
 11. Clear button for extra peaks JK
 12. Calibration input JK
 13. Dynamic plot text resize JS
+14. Functional Binning JP
 
 > **Note**
 > Suggestions are highly encouraged!
