@@ -7,8 +7,6 @@ multi-fit is a general tool that seeks to automatically detect peaks and fit to 
 ## Planned Features
 1. Ability to change the form of the fitting function. JP
 2. Compatibility with more types of input data (especially .csv). JP
-4. Label toggle JS
-5. Autolabel toggle JS
 6. Default save names JS
 7. Dark/Light mode JS/JK
 8. Multithread buttons JK
