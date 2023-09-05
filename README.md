@@ -12,7 +12,7 @@ multi-fit is a general tool that seeks to automatically detect peaks and fit to 
 10. Reformat graphs before save JS
 11. Make Amp guess more transparent (more info in README) JK
 12. Clear button for extra peaks JK
-13. Calibration input JK
+13. Save entry box inputs between sessions. JK
 14. Dynamic plot text resize JS
 15. Functional Binning JP
 16. Exception handeling (JK/JS/JP)
