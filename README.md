@@ -16,6 +16,10 @@ multi-fit is a general tool that seeks to automatically detect peaks and fit to 
 14. Dynamic plot text resize JS
 15. Functional Binning JP
 16. Exception handeling (JK/JS/JP)
+17. Lower limits row (jk)
+18. toggle switch for auto guessing (JS)
+19. Control over range of auto geusses (JS)
+    
 
 > **Note**
 > Suggestions are highly encouraged!
