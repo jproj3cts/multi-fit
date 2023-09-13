@@ -13,8 +13,8 @@ multi-fit is a general tool that seeks to automatically detect peaks and fit to 
 13. Save entry box inputs between sessions. JK
 15. Functional Binning JP
 16. Exception handeling (JK/JS/JP)
-19. Control over range of auto geusses (JS)
 20. Retain guesses after auto-guess JK
+21. Fix added peak annotations being too low JK
     
 
 > **Note**
