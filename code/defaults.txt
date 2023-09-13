@@ -1,0 +1,6 @@
+{
+  "parameter1": 1.234,
+  "parameter2": 5.678,
+  "parameter3": 0.987,
+  "parameter4": 3.14159
+}
