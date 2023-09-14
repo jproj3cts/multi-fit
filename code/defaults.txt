@@ -1,6 +1,1 @@
-{
-  "parameter1": 1.234,
-  "parameter2": 5.678,
-  "parameter3": 0.987,
-  "parameter4": 3.14159
-}
+{"color mode": "Dark", "osc": "10000", "freq": "350", "bin": "1", "A": {"calibr": "1", "tune": "1"}}
