@@ -1,1 +1,1 @@
-{"color mode": "Sage", "osc": "10000", "freq": "350", "bin": "100", "A": {"calibr": "1", "tune": "1"}}
+{"color mode": "Sage", "osc": "10000", "freq": "350", "bin": "1000", "A": {"calibr": "1", "tune": "10"}, "B": {"calibr": "2", "tune": "20"}, "C": {"calibr": "3", "tune": "30"}, "D": {"calibr": "4", "tune": "40"}}
