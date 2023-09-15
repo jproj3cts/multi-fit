@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 {"color mode": "Sage", "osc": "10000", "freq": "350", "bin": "1000", "A": {"calibr": "1", "tune": "10", "fit_params": [1, 1, 1, 1, 1, 1]}, "B": {"calibr": "2", "tune": "20", "fit_params": [1, 1, 1, 1, 1, 1]}, "C": {"calibr": "1", "tune": "10", "fit_params": [1, 1, 1, 1, 1, 1]}, "D": {"calibr": "4", "tune": "40", "fit_params": [1, 1, 1, 1, 1, 1]}, "fit_params": ["1E4", "1", "0", "0", "1", "1"]}
+=======
+{"color mode": "Sage", "osc": "10000", "freq": "350", "bin": "1000", "A": {"calibr": "1", "tune": "10"}, "B": {"calibr": "2", "tune": "20"}, "C": {"calibr": "3", "tune": "30"}, "D": {"calibr": "4", "tune": "40"}}
+>>>>>>> ae2f8e3bb478246e16d52d09643c6b83975264a9
