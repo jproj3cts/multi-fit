@@ -185,34 +185,40 @@ class Loading():
 
 #%%
 class data_processing:
-    def __init__(self, d, CH, datatype):
+    def __init__(self, d, CH, datatype, inputtype):
         self.CH = CH
         self.datatype = datatype
+        self.inputtype = inputtype
         self.d = d
         self.split_data = []
         self.processed_data = []
-        
-        self.xs = self.d[0][list(self.d[0].keys())[0]]
-        self.Ti = (self.xs[-1] - self.xs[0])/self.xs.shape[0]
-        self.l = self.xs.shape[0]
+        if self.inputtype == "Time":
+            self.xs = self.d[0][list(self.d[0].keys())[0]]
+            self.Ti = (self.xs[-1] - self.xs[0])/self.xs.shape[0]
+            self.l = self.xs.shape[0]
         #self.l = self.xs[-1] - self.xs[0]
         self.scale_x = 1e3
 
     def plot_time_series(self, ax, ax2, cal):
-        points = 10000 #Number of points on final graph
-        points_sep = round(len(self.xs)/points)
-        if points_sep < 1:
-            points_sep = 1
-        ax.scatter(self.xs[::points_sep], np.asarray(self.d[0][self.CH][::points_sep])*cal, color='tab:red', s = 1, alpha = 0.8)
-        ax.set_title('Time Series Data (CH {})'.format(self.CH))
-        ax2.set_xlabel('Time (s)')
-        ax.set_ylabel('Voltage (V)')
-        ax.set_xlim([self.xs[0],self.xs[-1]])
-        ax2.set_xlim(ax.get_xlim())
+        if self.inputtype == "Time":
+            points = 10000 #Number of points on final graph
+            points_sep = round(len(self.xs)/points)
+            if points_sep < 1:
+                points_sep = 1
+            ax.scatter(self.xs[::points_sep], np.asarray(self.d[0][self.CH][::points_sep])*cal, color='tab:red', s = 1, alpha = 0.8)
+            ax.set_title('Time Series Data (CH {})'.format(self.CH))
+            ax2.set_xlabel('Time (s)')
+            ax.set_ylabel('Voltage (V)')
+            ax.set_xlim([self.xs[0],self.xs[-1]])
+            ax2.set_xlim(ax.get_xlim())
         
     def plot_full_PSD(self, ax, ax2, cal):
         #plt.figure(figsize=(10, 3.5), dpi=80)
-        xf, pxx = periodogram(np.asarray(self.d[0][self.CH])*cal,fs=1/self.Ti)
+        if self.inputtype == "Time":
+            xf, pxx = periodogram(np.asarray(self.d[0][self.CH])*cal,fs=1/self.Ti)
+        elif self.inputtype == "PSD":
+            xf = self.d[0][0]
+            pxx = self.d[0][self.CH]
         ax.semilogy()
         points = 10000 #Number of points on final graph
         points_sep = round(len(xf)/points)
@@ -228,29 +234,34 @@ class data_processing:
         ax2.set_xlim(ax.get_xlim())
         
     def splitting_data(self, cal, freq = 3e5, osc = 1e4):
-        self.split_length = int(self.l*self.Ti/(osc*(1/freq)))
-        self.split_data = []
-        for i in range(len(self.d)):
-            r = int(len(self.d[i][self.CH])%self.split_length)
-            if r == 0:
-                self.split_data.append(np.split(self.d[i][self.CH]*cal, self.split_length))
-            else:
-                self.split_data.append(np.split(self.d[i][self.CH][:-r]*cal, self.split_length))
-        self.split_data = np.asarray(self.split_data)
+        if self.inputtype == "Time":
+            self.split_length = int(self.l*self.Ti/(osc*(1/freq)))
+            self.split_data = []
+            for i in range(len(self.d)):
+                r = int(len(self.d[i][self.CH])%self.split_length)
+                if r == 0:
+                    self.split_data.append(np.split(self.d[i][self.CH]*cal, self.split_length))
+                else:
+                    self.split_data.append(np.split(self.d[i][self.CH][:-r]*cal, self.split_length))
+            self.split_data = np.asarray(self.split_data)
         
     def average(self):
         # Find Summed PSDs.
         lpxx = []
         # For each channel, adds all periodograms generated from d seperate runs together.
-        for i in range(len(self.d)):
-            for j in range(self.split_data.shape[1]):
-                # This is done to limit too much memory allocation.
-                if i == 0: 
-                    xf, pxx = periodogram(self.split_data[i,j,:],fs=1/self.Ti)
-                else:
-                    _, pxx = periodogram(self.split_data[i,j,:],fs=1/self.Ti)
-                lpxx.append(pxx[1:])
-                
+        if self.inputtype == "Time":
+            for i in range(len(self.d)):
+                for j in range(self.split_data.shape[1]):
+                    # This is done to limit too much memory allocation.
+                    if i == 0: 
+                        xf, pxx = periodogram(self.split_data[i,j,:],fs=1/self.Ti)
+                    else:
+                        _, pxx = periodogram(self.split_data[i,j,:],fs=1/self.Ti)
+                    lpxx.append(pxx[1:])
+        elif self.inputtype == "PSD":
+            xf = self.d[0][0]
+            for i in range(len(self.d)):
+                lpxx.append(self.d[i][self.CH])
         lpxx = np.asarray(lpxx)
         mpxx = np.mean(lpxx, axis= 0 )
         spxx = np.std(lpxx, axis= 0 )
@@ -258,25 +269,35 @@ class data_processing:
         self.processed_data = [xf[1:], mpxx, spxx, epxx, self.CH]
         
     def binning(self, cal, binsize):
-        xf, pxx = periodogram(np.asarray(self.d[0][self.CH])*cal,fs=1/self.Ti)
-        #xf = sig.convolve(xf, np.ones(binsize), mode = 'same')/binsize
-        binned = sig.convolve(pxx, np.ones(binsize), mode = 'same')
-        binned_err = []
-        
-        a = int(binsize/2)
-        b = a
-        lpxxmb = len(pxx)-b
-        for i in range(len(pxx)):
-            if i > a and lpxxmb > i:
-                binned_err.append(np.std(pxx[i-a:i+b]))
-            elif i > a:
-                binned_err.append(np.std(pxx[i-a:i]))
-            elif lpxxmb > i:
-                binned_err.append(np.std(pxx[i:i+b]))
-        mpxx = binned
-        spxx = binned_err
-        epxx = binned_err/np.sqrt(len(mpxx))
-        self.processed_data = [xf, mpxx, spxx, epxx, self.CH]
+        if self.inputtype == "Time":
+            tot_time = self.d[0][self.CH]
+            if len(self.d) > 1:
+                for i in range(1,len(self.d)):
+                    tot_time = np.concatenate((tot_time, self.d[i][self.CH]))
+            xf, pxx = periodogram(tot_time*cal,fs=1/self.Ti)
+        elif self.inputtype == "PSD":
+            xf = self.d[0][0]
+            pxx = self.d[0][self.CH]
+        #xf = sig.convolve(xf, np.ones(binsize), mode = 'same')
+        avpxx = sig.convolve(pxx, np.ones(binsize), mode = 'same')/binsize
+        #binned_err = []
+        #a = int(binsize/2)
+        #b = a
+        #lpxxmb = len(pxx)-b
+        pxx2 = np.square(pxx)
+        avpxx2 = sig.convolve(pxx2, np.ones(binsize), mode = 'same')/binsize
+        binned_err = np.sqrt(avpxx2 - np.square(avpxx))
+        #for i in range(len(pxx)):
+        #    if i > a and lpxxmb > i:
+        #        binned_err.append(np.std(pxx[i-a:i+b]))
+        #    elif i > a:
+        #        binned_err.append(np.std(pxx[i-a:i]))
+        #    elif lpxxmb > i:
+        #        binned_err.append(np.std(pxx[i:i+b]))
+        mpxx = avpxx[int(binsize/2)::binsize]
+        spxx = binned_err[int(binsize/2)::binsize]
+        epxx = binned_err[int(binsize/2)::binsize]/np.sqrt(len(mpxx))
+        self.processed_data = [xf[int(binsize/2)::binsize], mpxx, spxx, epxx, self.CH]
 
     def plot_mean_errorbars(self, ax, ax2):
         xf, mpxx, epxx = self.processed_data[0], self.processed_data[1], self.processed_data[3]
@@ -771,16 +792,14 @@ class App:
         
         # creating the Tkinter canvas.
         # containing the Matplotlib figure.
-        self.canvas = FigureCanvasTkAgg(self.fig,
-                                   master = self.root)
+        self.canvas = FigureCanvasTkAgg(self.fig, master = self.root)
         self.canvas.mpl_connect('button_press_event', self.plotClick)
 
 
         # placing the canvas on the Tkinter window.
         self.canvas.get_tk_widget().place(relx=420/self.width, rely = 45/self.height, relwidth=760/self.width, relheight=450/self.height)
 
-        toolbar = NavigationToolbar2Tk(self.canvas,
-                                       root)
+        toolbar = NavigationToolbar2Tk(self.canvas, root)
         toolbar.update()
         self.canvas.draw()
         # placing the toolbar on the Tkinter window.
@@ -1425,7 +1444,7 @@ class App:
             self.set_boxes_from_jparams()
             self.CH = str(selection)
             self.channel = string.ascii_uppercase[self.CHs.index(self.CH)]
-            self.process = data_processing(self.d, self.CH, self.datatype)
+            self.process = data_processing(self.d, self.CH, self.datatype, self.inputtype)
             self.set_boxes_from_jparams()
             self.GLineEdit_save.delete(0, 'end')
             self.GLineEdit_save.insert(0,'multifit' + selection +'.csv')
@@ -1455,12 +1474,13 @@ class App:
     
     # Plot time series.
     def plot_time_series(self):
-        cal = float(self.GLineEdit_cal_input.get())
-        self.plot1.cla()
-        self.process.plot_time_series(self.plot1, self.plot2, cal)
-        self.canvas.draw()
-        self.pull_params_for_json()
-        self.save_json()
+        if self.inputtype == "Time":
+            cal = float(self.GLineEdit_cal_input.get())
+            self.plot1.cla()
+            self.process.plot_time_series(self.plot1, self.plot2, cal)
+            self.canvas.draw()
+            self.pull_params_for_json()
+            self.save_json()
     
     # Plot PSD
     def plot_psd(self):
@@ -1501,7 +1521,7 @@ class App:
         self.plot1.cla()
         self.plot2.cla()
         if str.isdigit(cal) and str.isdigit(binsize):
-            self.process.binning(float(cal), int(binsize))   
+            self.process.binning(float(cal), int(binsize))
             #p = multiprocessing.Process(target=self.mp_split_avg, args = (cal, hz, osc))
             #p.start()
         self.process.plot_mean_errorbars(self.plot1, self.plot2)
@@ -1855,7 +1875,6 @@ class App:
     def _quit():
         root.quit()     # stops mainloop
         root.destroy()  # this is necessary on Windows to prevent
-                        # Fatal Python Error: PyEval_RestoreThread: NULL tstate
 
 #%%
 def close():
