@@ -813,7 +813,7 @@ class App:
         self.plot3 = self.fig2.add_axes((0, 0, 1, 1))
         
         self.plot3.axis('off')
-        self.func = r'$\frac{a}{(\omega+d)^b} + c + \sum{\frac{A \Gamma}{(\omega^2 - \omega_q^2)^2+ \Gamma^2\omega^2}}$'
+        self.func = r'$\frac{a}{(\omega+d)^b} + c + \sum_i {\frac{A_i \Gamma_i}{(f_i^2 - f_i^2)^2+ \Gamma_i^2f_i^2}}$'
         self.plot3.text(0.5,0.5,self.func,
                         ha='center', va='center', color = self.txtcolour, backgroundcolor=self.bgcolour, fontsize=self.size_plt)
         # creating the Tkinter canvas.
