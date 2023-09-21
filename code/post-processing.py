@@ -69,35 +69,37 @@ class post_processing():
         self.data = sorted(self.data, key=lambda i: i[0])
         self.pressures = [i[0] for i in self.data]
     
-    def peak_collector(self, tolerance = 3e3):
+    def peak_collector(self, tolerance = 5e3):
         self.pp = {} #peak pointer
         #self.pp = []
         diff = [0,0,0]
         for i in range(len(self.CHs)):
+            ch = self.CHs[i]
             self.pp[self.CHs[i]] = []
             for k in range(len(self.data)):
-                if k != []:
+                if self.data[k][1][i] != []:
                     a = k
-                    for j in range(len(self.data[k][1][i][0][1])):
-                        self.pp[self.CHs[i]].append((0,i,j))
+                    for j in range(len(self.data[k][1][i][0][1])): 
+                        self.pp[ch].append([[k,i,j]])
                     break
-            for j in range(a+1,len(self.data)):
-                for k in range(len(self.data[i][1][j][0][1])): #peak loop [0][1] goes into the fit params and into the peak vals
-                    for l in range(len(self.pp)): #checking if it matches other peaks
-                        if (self.data[j][1][i][0][1][k][0] - tolerance <= self.data[self.pp[i][l][-1][0]][1][self.pp[i][l][-1][1]][0][1][self.pp[i][l][-1][2]][0] 
-                            and self.data[j][1][i][0][1][k][0] +tolerance >= self.data[self.pp[i][l][-1][0]][1][self.pp[i][l][-1][1]][0][1][self.pp[i][l][-1][2]][0] and 
-                            j!=self.pp[i][l][-1][0]):
+            for j in range(a+1,len(self.data)): 
+                for k in range(len(self.data[j][1][i][0][1])): #peak loop [0][1] goes into the fit params and into the peak vals
+                    for l in range(len(self.pp[ch])): #checking if it matches other peaks
+                        if (self.data[j][1][i][0][1][k][0] - tolerance <= self.data[self.pp[ch][l][-1][0]][1][self.pp[ch][l][-1][1]][0][1][self.pp[ch][l][-1][2]][0] and 
+                            self.data[j][1][i][0][1][k][0] + tolerance >= self.data[self.pp[ch][l][-1][0]][1][self.pp[ch][l][-1][1]][0][1][self.pp[ch][l][-1][2]][0] and 
+                            j!=self.pp[ch][l][-1][0]):
                             
                             diff = [0,0,0]
                             for m in [-1,0,1]: #check to see if peak is closer to a different neighbour
-                                diff[m+1] = abs(self.data[j][1][i][0][1][k][0] - self.data[self.pp[(l+m)%len(self.pp[i])][-1][0]][1][self.pp[i][(l+m)%len(self.pp[i])][-1][1]][0][1][self.pp[i][(l+m)%len(self.pp[i])][-1][2]][0])
+                                diff[m+1] = abs(self.data[j][1][i][0][1][k][0] - self.data[self.pp[ch][(l+m)%len(self.pp[ch])][-1][0]][1][self.pp[ch][(l+m)%len(self.pp[ch])][-1][1]][0][1][self.pp[ch][(l+m)%len(self.pp[ch])][-1][2]][0])
                             idx = min(range(len(diff)), key=diff.__getitem__)
                             if diff[idx] !=0.0:
-                                self.pp[l+idx-1].append([j,i,k])
+                                self.pp[ch][l+idx-1].append([j,i,k])
                                 break
-                        elif self.data[j][1][i][0][1][k][0] > self.data[self.pp[i][l][-1][0]][1][self.pp[i][l][-1][1]][0][1][self.pp[i][l][-1][2]][0]:
-                            self.pp[i].insert(l, [[j,i,k]])
+                        elif self.data[j][1][i][0][1][k][0] > self.data[self.pp[ch][l][-1][0]][1][self.pp[ch][l][-1][1]][0][1][self.pp[ch][l][-1][2]][0]:
+                            self.pp[ch].insert(l, [[j,i,k]])
                             break
+            self.pp[ch].reverse()
         
         
         print(self.pp)
@@ -124,7 +126,7 @@ class post_processing():
         #                        elif self.data[i][1][j][0][1][k][0] > self.data[self.pp[l][-1][0]][1][self.pp[l][-1][1]][0][1][self.pp[l][-1][2]][0]:
         #                            self.pp.insert(l, [[i,j,k]])
         #                            break
-        self.pp.reverse()
+        #self.pp.reverse()
     
     def peak_identification(self, bounds = 1000):
         #Harmonic identification
@@ -186,14 +188,18 @@ class post_processing():
                         else:
                             self.labels[i] = self.labels[int(self.sideband[i,0,k])] + sign + self.labels[int(self.sideband[i,1,k])]
     
+    
+    
     def repack_data(self):
         self.re_data = np.zeros((len(self.pressures),len(self.pp),len(self.CHs),3))
         self.re_err = np.zeros((len(self.pressures),len(self.pp),len(self.CHs),3))
-        for i in range(len(self.pp)): #Sweep over peak groups
-            for j in self.pp[i]: #Sweep over peaks in group
-                for k in range(3): #Sweep over fitting parameters
-                    self.re_data[j[0]][i][j[1]][k] = self.data[j[0]][1][j[1]][0][1][j[2]][k]
-                    self.re_err[j[0]][i][j[1]][k] = self.data[j[0]][1][j[1]][1][1][j[2]][k]
+        for l in range(len(self.pp)):
+            ch = self.CHs[l]
+            for i in range(len(self.pp[ch])): #Sweep over peak groups
+                for j in self.pp[ch][i]: #Sweep over peaks in group
+                    for k in range(len(j)): #Sweep over fitting parameters
+                        self.re_data[j[0]][i][j[1]][k] = self.data[j[0]][1][j[1]][0][1][j[2]][k]
+                        self.re_err[j[0]][i][j[1]][k] = self.data[j[0]][1][j[1]][1][1][j[2]][k]
         self.re_data[ self.re_data==0 ] = np.nan
         self.re_err[ self.re_data==0 ] = np.nan
     
