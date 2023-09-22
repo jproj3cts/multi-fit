@@ -6,12 +6,10 @@ multi-fit is a general tool that seeks to automatically detect peaks and fit to 
  
 ## Planned Features
 1. Ability to change the form of the fitting function. JP
-2. Compatibility with more types of input data (especially .csv). JP
 8. Multithread buttons JK
 11. Video Explanation of Software JK
-12. Clear button for extra peaks JK
-13. Save entry box inputs between sessions. JK
-20. Retain guesses after auto-guess JK
+12. Make a usable README JK
+13. Clear button for extra peaks JK
 21. Fix added peak annotations being too low JK
     
 
