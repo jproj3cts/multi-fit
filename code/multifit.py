@@ -673,7 +673,8 @@ class App:
             "Retro": ["#000000","#F0F0F0","#BABABA","#DEDEDE","#FF0000"],
             "High Contrast": ["#FFFF00", "#000000", "#000000", "#333333","#00FFFF"],
             "Barbie": ["#ffd9df", "#f658b8", "#ee71c3", "#f29ad8","#a0fffc"],
-            "Sage" : ["#FFFFFF","#afb8a0", "#b9c2ac", "#d1cec2", "#b5aaaa"]
+            "Sage" : ["#FFFFFF","#afb8a0", "#b9c2ac", "#d1cec2", "#b5aaaa"],
+            "Lavender": ["#ffffff","#7b3381","#8d5192","#d9c3db","#88bbe2"]
         }
 
         
