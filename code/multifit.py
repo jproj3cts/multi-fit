@@ -179,7 +179,10 @@ class Loading():
             restructuredData.append({'T':time})
             keys = self.d[i].keys()
             for j in keys:
-                if len(self.d[i][j]) >=50:
+                if len(self.d[i][j]) >=100:
+                    print(i)
+                    print(j)
+                    print(len(self.d[i][j]))
                     restructuredData[i][j] = self.d[i][j][:,0]
         self.d = restructuredData
 
@@ -410,7 +413,7 @@ class fit_data:
         if it was a Lorentzian feature. This assumes we already know what the peak
         approximatly is."""
 
-        imax = np.searchsorted(xs, x0) #peak index
+        imax = np.searchsorted(xs, x0) -1 #peak index
         ymax = ys[imax] #peak height
 
         #calculate width and scaling parameterss
