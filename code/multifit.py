@@ -4,19 +4,15 @@ import numpy as np
 import os
 from os import listdir
 from os.path import isfile, join
-import re
 import scipy.constants as c
 from scipy.io import loadmat
 from scipy.optimize import curve_fit
-from scipy.signal import welch
 from scipy.signal import find_peaks
 from scipy.signal import periodogram
-from scipy.interpolate import interp1d
 import scipy.signal as sig
 import math
 import string
 import pandas as pd
-import time
 import json
 import csv
 
@@ -28,7 +24,6 @@ from tkinter import filedialog
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 # Implement the default Matplotlib key bindings.
-from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
 from matplotlib.backend_bases import MouseButton
 #plt.style.use("dark_background")
@@ -38,7 +33,6 @@ from threading import Thread
 # Multiprocessing
 import multiprocessing
 multiprocessing.freeze_support()
-from multiprocessing import Pool
 
 #%%
 # Functions to be fitted.
@@ -65,9 +59,6 @@ def progress_bar(i,L,w):
     pr = i/L
     print(2*w*' ', end = '\r')
     print('[{}{}]{}/100%'.format(int(w*pr)*'#',int(w*(1-pr))*'.',round(100*pr,1)),end='\r')
-
-def count_e(nested_list):
-    return sum(count_elements_nested_list(item) if isinstance(item, list) else 1 for item in nested_list)
 
 #%%
 class Rod_Gamas:
@@ -180,11 +171,9 @@ class Loading():
             keys = self.d[i].keys()
             for j in keys:
                 if len(self.d[i][j]) >=100:
-                    print(i)
-                    print(j)
-                    print(len(self.d[i][j]))
                     restructuredData[i][j] = self.d[i][j][:,0]
         self.d = restructuredData
+        #print(self.d)
 
 #%%
 class data_processing:
@@ -281,22 +270,10 @@ class data_processing:
         elif self.inputtype == "PSD":
             xf = self.d[0][0]
             pxx = self.d[0][self.CH]
-        #xf = sig.convolve(xf, np.ones(binsize), mode = 'same')
         avpxx = sig.convolve(pxx, np.ones(binsize), mode = 'same')/binsize
-        #binned_err = []
-        #a = int(binsize/2)
-        #b = a
-        #lpxxmb = len(pxx)-b
         pxx2 = np.square(pxx)
         avpxx2 = sig.convolve(pxx2, np.ones(binsize), mode = 'same')/binsize
         binned_err = np.sqrt(avpxx2 - np.square(avpxx))
-        #for i in range(len(pxx)):
-        #    if i > a and lpxxmb > i:
-        #        binned_err.append(np.std(pxx[i-a:i+b]))
-        #    elif i > a:
-        #        binned_err.append(np.std(pxx[i-a:i]))
-        #    elif lpxxmb > i:
-        #        binned_err.append(np.std(pxx[i:i+b]))
         mpxx = avpxx[int(binsize/2)::binsize]
         spxx = binned_err[int(binsize/2)::binsize]
         epxx = binned_err[int(binsize/2)::binsize]/np.sqrt(len(mpxx))
@@ -449,7 +426,7 @@ class fit_data:
     ###
         
     def fit_multipeak(self, a, b, c, d, gamma, amp, aub, bub, cub, dub, gub, Aub, alb, blb, clb, dlb, glb, Alb, peak_search_area = 250, guess_toggle = True):
-        xf, mpxx, spxx, epxx = self.processed_data[0], self.processed_data[1], self.processed_data[2], self.processed_data[3]
+        xf, mpxx, spxx = self.processed_data[0], self.processed_data[1], self.processed_data[2]
         
         # Build multi func.
         vs = 'omega, a, b, c, d,'
@@ -564,7 +541,7 @@ class fit_data:
                             self.labels[i] = self.labels[int(self.sideband[i,0,k])] + sign + self.labels[int(self.sideband[i,1,k])]
     
     def plot(self, ax, ax2, auto_label = True, label_toggle = True, points=10000):
-        xf, mpxx, spxx, epxx = self.processed_data[0], self.processed_data[1], self.processed_data[2], self.processed_data[3]
+        xf, mpxx, epxx = self.processed_data[0], self.processed_data[1], self.processed_data[3]
         
         self.peak_identification()
         
@@ -652,7 +629,6 @@ import tkinter as tk
 import tkinter.font as tkFont
 
 class App:
-            
     def __init__(self, root):
         # Plot type flags.
         self.peaks_plot = False
@@ -817,7 +793,7 @@ class App:
         self.plot3 = self.fig2.add_axes((0, 0, 1, 1))
         
         self.plot3.axis('off')
-        self.func = r'$\frac{a}{(\omega+d)^b} + c + \sum_i {\frac{A_i \Gamma_i}{(f_i^2 - f_i^2)^2+ \Gamma_i^2f_i^2}}$'
+        self.func = r'$\frac{a}{(f+d)^b} + c + \sum_i {\frac{A_i \Gamma_i}{(f^2 - f_i^2)^2+ \Gamma_i^2f_i^2}}$'
         self.plot3.text(0.5,0.5,self.func,
                         ha='center', va='center', color = self.txtcolour, backgroundcolor=self.bgcolour, fontsize=self.size_plt)
         # creating the Tkinter canvas.
@@ -1295,17 +1271,17 @@ class App:
     
         # Peak Fit output freq labelca
         self.GFitOutLabel_freq=tk.Label(self.root, anchor="w", font=self.ft_body, bg=self.bgcolour, fg=self.txtcolour, justify="center")
-        self.GFitOutLabel_freq["text"] = "ωq"
+        self.GFitOutLabel_freq["text"] = "f_i"
         self.GFitOutLabel_freq.place(relx=(715+of)/self.width, rely = (425+yof)/self.height, relwidth= 50/self.width, relheight= 25/self.height)
         
         # Peak Fit output gamma label
         self.GFitOutLabel_gamma=tk.Label(self.root, anchor="w", font=self.ft_body, bg=self.bgcolour, fg=self.txtcolour, justify="center")
-        self.GFitOutLabel_gamma["text"] = "Γ"
+        self.GFitOutLabel_gamma["text"] = "Γ_i"
         self.GFitOutLabel_gamma.place(relx=(770+of)/self.width, rely = (425+yof)/self.height, relwidth= 50/self.width, relheight= 25/self.height)
         
         # Peak Fit output amp label
         self.GFitOutLabel_amp=tk.Label(self.root, anchor="w", font=self.ft_body, bg=self.bgcolour, fg=self.txtcolour, justify="center")
-        self.GFitOutLabel_amp["text"] = "A"
+        self.GFitOutLabel_amp["text"] = "A_i"
         self.GFitOutLabel_amp.place(relx=(825+of)/self.width, rely = (425+yof)/self.height, relwidth= 50/self.width, relheight= 25/self.height)
 
         # Peak Fit output a
@@ -1459,7 +1435,7 @@ class App:
                 self.plot2.cla()
                 self.canvas.draw()
             except:
-                a=1
+                pass
 
     # File extension selector
     def datatype_set(self,selection):
