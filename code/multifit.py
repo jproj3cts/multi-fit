@@ -138,6 +138,7 @@ class Loading():
         breakflag = False
         for i in range(len(self.d)):
             restructuredData.append({})
+        for i in range(len(self.d)):
             for j in range(len(self.d[i])):
                 for k in range(len(self.d[i][j])):
                     try:
@@ -151,16 +152,18 @@ class Loading():
                 if breakflag:
                     break
             if breakflag:
-                break              
-
+                break
+        
         for i in range(len(self.d)): #File
             for k in range(len(self.d[i][0])): #Column
+
                 restructuredData[i][self.d[i][0][k]] = np.zeros(len(self.d[i])-stringrows)
                 for j in range(len(self.d[i])): #Rows
                     try:
                         restructuredData[i][self.d[i][0][k]][j] = float(self.d[i][j+stringrows][k])
                     except ValueError and IndexError:
                         break
+
         self.d = restructuredData
     
     def restructureMat(self):
@@ -362,15 +365,18 @@ class fit_data:
             #comment here Jon
             max_ub_x = x0s[i] + wander
             max_lb_x = x0s[i] - wander
-            if i == 0:
+            if len(x0s) == 1:
+                ub_x = max_ub_x
+                lb_x = max_lb_x
+            elif i == 0:
                 ub_x = (x0s[i+1] + x0s[i])/2
                 lb_x = x0s[i] - (ub_x - x0s[i])
 
-            if i != 0 and i!= len(x0s) - 1:
+            elif i != 0 and i!= len(x0s) - 1:
                 ub_x = (x0s[i+1] + x0s[i])/2
                 lb_x = (x0s[i] + x0s[i-1])/2
 
-            if i == len(x0s) - 1:
+            elif i == len(x0s) - 1:
                 lb_x = (x0s[i] + x0s[i-1])/2
                 ub_x = x0s[i] + (x0s[i] - lb_x)
                 
