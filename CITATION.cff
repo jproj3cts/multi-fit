@@ -15,4 +15,8 @@ authors:
   - given-names: Joseph
     family-names: Kelly
     affiliation: King's College London
+  - given-names: Jon D.
+    family-names: Pritchett
+    affiliation: King's College London
+    orcid: 'https://orcid.org/0000-0002-0777-1962'
 repository-code: 'https://github.com/jproj3cts/multi-fit'
