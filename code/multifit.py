@@ -34,6 +34,9 @@ from threading import Thread
 import multiprocessing
 multiprocessing.freeze_support()
 
+plt.rcdefaults()
+
+
 #%%
 # Functions to be fitted.
 def sqq(omega,omegaq,Gammacm,Tcm,M):
@@ -233,7 +236,8 @@ class data_processing:
             self.split_length = int(self.l*self.Ti/(osc*(1/freq)))
             self.split_data = []
             for i in range(len(self.d)):
-                r = int(len(self.d[i][self.CH])%self.split_length)
+                print(i)
+                r = int(len(self.d[i][self.CH]))%self.split_length
                 if r == 0:
                     self.split_data.append(np.split(self.d[i][self.CH]*cal, self.split_length))
                 else:
@@ -258,9 +262,10 @@ class data_processing:
             for i in range(len(self.d)):
                 lpxx.append(self.d[i][self.CH])
         lpxx = np.asarray(lpxx)
-        mpxx = np.mean(lpxx, axis= 0 )
+        mpxx = np.mean(lpxx, axis= 0)
         spxx = np.std(lpxx, axis= 0 )
         epxx = np.std(lpxx, axis= 0 )/np.sqrt(lpxx.shape[0])
+        self.lpxx = lpxx
         self.processed_data = [xf[1:], mpxx, spxx, epxx, self.CH]
         
     def binning(self, cal, binsize):
@@ -283,7 +288,7 @@ class data_processing:
         self.processed_data = [xf[int(binsize/2)::binsize], mpxx, spxx, epxx, self.CH]
 
     def plot_mean_errorbars(self, ax, ax2):
-        xf, mpxx, epxx = self.processed_data[0], self.processed_data[1], self.processed_data[3]
+        xf, mpxx, spxx, epxx = self.processed_data[0], self.processed_data[1], self.processed_data[2], self.processed_data[3]
         ax.semilogy()
         points = 10000 #Number of points on final graph
         points_sep = round(len(xf)/points)
@@ -298,12 +303,49 @@ class data_processing:
         ax.set_xlim([xf[0],xf[-1]])
         ax2.set_xlim(ax.get_xlim())
         
+    def plot_mean_errorbars1(self, ax):
+        xf, mpxx, epxx = self.processed_data[0], self.processed_data[1], self.processed_data[3]
+        
+        ax.semilogy()
+        points = 10000 #Number of points on final graph
+        points_sep = round(len(xf)/points)
+        if points_sep < 1:
+            points_sep = 1
+        ax.errorbar(xf[::points_sep], mpxx[::points_sep], yerr = epxx[::points_sep], marker='.', linestyle='',color='black', ms = 1, alpha = 0.8)
+        ax.set_xlabel('Frequency (kHz)')
+        ticks_x = ticker.FuncFormatter(lambda x, pos: '{0:g}'.format(x/self.scale_x))
+        ax.xaxis.set_major_formatter(ticks_x)
+        ax.set_ylabel('PSD (V$^2$/Hz)')
+        ax.set_xlim([xf[0],xf[-1]])
+        
+    def save_graph(self,save_plot,directory,fname = None,png = False): #Saving graph
+    
+        if fname == None:
+            path = os.path.join(directory, 'multifit' + self.processed_data[4] +'.pdf')
+            path_png = os.path.join(directory, 'multifit' + self.processed_data[4] +'.png')
+        else:
+            path = os.path.join(directory, fname + '.pdf')
+            path_png = os.path.join(directory, fname + '.png')
+        
+        save_plot.savefig(path, format="pdf", bbox_inches="tight")
+        if png:
+            save_plot.savefig(path_png, format="png", dpi=500)
+        save_stage = [self.processed_data[0], self.processed_data[1], self.processed_data[3]]
+        df = pd.DataFrame(save_stage)
+        if fname == None:
+            path = os.path.join(directory, 'multifit' + self.processed_data[4] +'.csv')
+        else:
+            path = os.path.join(directory, fname + '.csv')
+        df.to_json(path,double_precision=15)#,header=False,index=False
+        
+        
 #%%
 class fit_data:
-    def __init__(self, processed_data):
+    def __init__(self, processed_data, lpxx):
         self.processed_data = processed_data
         self.popt = []
         self.pcov = []
+        self.lpxx = lpxx
         self.labels = []
         self.p = 0
         self.scale_x = 1e3
@@ -434,6 +476,9 @@ class fit_data:
     def fit_multipeak(self, a, b, c, d, gamma, amp, aub, bub, cub, dub, gub, Aub, alb, blb, clb, dlb, glb, Alb, peak_search_area = 250, guess_toggle = True):
         xf, mpxx, spxx = self.processed_data[0], self.processed_data[1], self.processed_data[2]
         
+        split_popt = []
+        # split_err = []
+        
         # Build multi func.
         vs = 'omega, a, b, c, d,'
         funcString1 = "def multi_peak({}):"
@@ -483,8 +528,15 @@ class fit_data:
                 upperBound += (self.amp_list[i]*aub*1e14,)
                 p0g.append(self.amp_list[i]*amp*1e14) # amp guesses
         #Fitting
-        self.popt, self.pcov = curve_fit(multi_peak, xf, mpxx,
-                               sigma = spxx, absolute_sigma = True, bounds = (lowerBound, upperBound), p0 = p0g)
+        # self.popt, self.pcov = curve_fit(multi_peak, xf, mpxx,
+        #                        sigma = spxx, absolute_sigma = True, bounds = (lowerBound, upperBound), p0 = p0g)
+        for i, split in enumerate(self.lpxx):
+            popt, _ = curve_fit(multi_peak, xf, split, bounds = (lowerBound, upperBound), p0 = p0g)
+            # err = np.sqrt(np.diag(pcov))
+            split_popt.append(popt)
+        split_poptarr = np.asarray(split_popt)
+        self.popt = np.mean(split_poptarr, axis= 0)
+        self.err = np.std(split_poptarr, axis= 0 )
 
     def peak_identification(self, bounds = 1000):
         #Harmonic identification
@@ -547,7 +599,7 @@ class fit_data:
                             self.labels[i] = self.labels[int(self.sideband[i,0,k])] + sign + self.labels[int(self.sideband[i,1,k])]
     
     def plot(self, ax, ax2, auto_label = True, label_toggle = True, points=10000):
-        xf, mpxx, epxx = self.processed_data[0], self.processed_data[1], self.processed_data[3]
+        xf, mpxx, spxx, epxx = self.processed_data[0], self.processed_data[1], self.processed_data[2], self.processed_data[3]
         
         self.peak_identification()
         
@@ -591,11 +643,12 @@ class fit_data:
             ax.fill_between(xf, ssqq(xf, *self.popt[4+i*3:4+(i+1)*3]) +  self.popt[0]/((xf+self.popt[3])**self.popt[1]) + self.popt[2], (self.popt[0]/((xf+self.popt[3])**self.popt[1])) + self.popt[2], alpha = 0.5)
             if label_toggle:
                 ax.annotate(self.labels[i],(self.popt[4+3*i], self.amp_list[i]*1.05), ha='center')
-        res = ((mpxx-multi_peak(xf,*self.popt))/epxx) #calculating residuals
+        res = ((mpxx-multi_peak(xf,*self.popt))/spxx) #calculating residuals
         ax2.scatter(xf[::point_sep], res[::point_sep], color = 'k', s = 0.1) #plotting residuals
 
     def save(self,directory,fname = None): #Saving data strucutre
-        errors = np.sqrt(np.diag(self.pcov))
+        # errors = np.sqrt(np.diag(self.pcov))
+        errors = self.err
         background_fit = np.asarray(self.popt[:4])
         background_err = np.asarray(errors[:4])
         peaks_fit = np.reshape(self.popt[4:],(int(len(self.popt[4:])/3),3))
@@ -1525,7 +1578,7 @@ class App:
         
         self.plot1.cla()
         width = int(self.GLineEdit_width.get())
-        self.fit = fit_data(self.process.processed_data)
+        self.fit = fit_data(self.process.processed_data,self.process.lpxx)
         self.fit.find_peaks(width, self.plot1, self.plot2)
         self.GLabel_num["text"] = "Peaks Found: {}".format(self.fit.p)
         self.canvas.draw()
@@ -1642,12 +1695,12 @@ class App:
         root.withdraw() # Hides small tkinter window.
         root.attributes('-topmost', True) # Opened windows will be active. above all windows despite of selection.
         self.path = filedialog.askdirectory() # Returns opened path as str
-        self.graph_save_name = self.GLineEdit_save.get()
+        self.graph_save_name = self.GLineEdit_Graph_save.get()
         if self.graph_save_name[-4:] == '.pdf':
-            self.graph_save_name = self.save_name[:-4]
+            self.graph_save_name = self.graph_save_name[:-4]
         if self.graph_save_name == '':
             self.graph_save_name = None
-        save_thread = Thread(target=self.Graph_save)
+        save_thread = Thread(target=self.Graph_save1)
         save_thread.start()
         self.pull_params_for_json()
         self.save_json()
@@ -1676,19 +1729,28 @@ class App:
         self.save_plot1.set_facecolor((1, 1, 1))
         self.save_plot2.set_facecolor((1, 1, 1))
         self.fit.plot(self.save_plot1, self.save_plot2, label_toggle=self.label_toggle, auto_label=self.auto_label_toggle,points=500)
-        plt.rc("figure", figsize=[8, 6]) #[8/2.54, 6/2.54]
-        SMALL_SIZE = 8
-        MEDIUM_SIZE = 10
-        BIGGER_SIZE = 12
-        plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
-        plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
-        plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
-        plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-        plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
-        plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
-        plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
-        plt.rc('lines', linewidth=1)
+        plt.style.use(r"C:\Users\k19044739\OneDrive - King's College London\PhD\Thesis\AllPlottingCodes\mystyle.mplstyle")
+        #plt.rc("figure", figsize=[5, 6]) #[8, 6]
         self.fit.save_graph(self.save_plot, self.path, self.graph_save_name, png = self.png)
+        plt.rcdefaults()
+        self.progressbar1.stop()
+        self.GLabel_save_graph_ind["text"] = "Saved"
+        
+    def Graph_save1(self):
+        self.GLabel_save_graph_ind["text"] = ""
+        self.progressbar1.start()
+        plt.style.use(r"C:\Users\k19044739\OneDrive - King's College London\PhD\Thesis\AllPlottingCodes\mystyle.mplstyle")
+        plt.rc("figure", figsize=[10, 4]) #[8, 6]
+        plt.rc("axes", grid = False) #Default True
+        self.save_plot = Figure()
+        self.save_plot1 = self.save_plot.add_axes((0.1, 0.35, 0.85, 0.575))
+        
+        self.save_plot1.tick_params(axis = 'x', bottom = True, top = True, left = True, right = 'True', direction = 'in', which = 'both', colors = 'black')
+        self.save_plot1.tick_params(axis = 'y', bottom = True, top = True, left = True, right = 'True', direction = 'in', which = 'both', colors = 'black')
+        self.save_plot1.set_facecolor((1, 1, 1))
+        
+        self.process.plot_mean_errorbars1(self.save_plot1)
+        self.process.save_graph(self.save_plot, self.path, self.graph_save_name, png = self.png)
         plt.rcdefaults()
         self.progressbar1.stop()
         self.GLabel_save_graph_ind["text"] = "Saved"
@@ -1880,4 +1942,3 @@ root.columnconfigure(0, weight=1)
 app = App(root)
 root.protocol("WM_DELETE_WINDOW", close)
 root.mainloop()
-
